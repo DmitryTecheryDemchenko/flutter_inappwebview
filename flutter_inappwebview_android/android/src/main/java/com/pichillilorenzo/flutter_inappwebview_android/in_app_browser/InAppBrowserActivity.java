@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -14,6 +15,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -51,7 +53,7 @@ import io.flutter.plugin.common.MethodChannel;
 public class InAppBrowserActivity extends AppCompatActivity implements InAppBrowserDelegate, Disposable {
   protected static final String LOG_TAG = "InAppBrowserActivity";
   public static final String METHOD_CHANNEL_NAME_PREFIX = "com.pichillilorenzo/flutter_inappbrowser_";
-  
+
   @Nullable
   public Integer windowId;
   public String id;
@@ -77,14 +79,14 @@ public class InAppBrowserActivity extends AppCompatActivity implements InAppBrow
   @Nullable
   public InAppBrowserChannelDelegate channelDelegate;
   public List<InAppBrowserMenuItem> menuItems = new ArrayList<>();
-  
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
     Bundle b = getIntent().getExtras();
     if (b == null) return;
-    
+
     id = b.getString("id");
 
     String managerId = b.getString("managerId");
@@ -106,8 +108,15 @@ public class InAppBrowserActivity extends AppCompatActivity implements InAppBrow
     pullToRefreshLayout.channelDelegate = new PullToRefreshChannelDelegate(pullToRefreshLayout, pullToRefreshLayoutChannel);
     pullToRefreshLayout.settings = pullToRefreshSettings;
     pullToRefreshLayout.prepare();
-    
+
     webView = findViewById(R.id.webView);
+    InAppWebView cachedView = manager.plugin.cachedView;
+    String cachedUrl = manager.plugin.cachedUrl;
+    if (cachedView!= null) {
+      pullToRefreshLayout.removeView(webView);
+      webView = cachedView;
+      pullToRefreshLayout.addView(webView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+    }
     webView.id = id;
     webView.windowId = windowId;
     webView.inAppBrowserDelegate = this;
@@ -148,7 +157,13 @@ public class InAppBrowserActivity extends AppCompatActivity implements InAppBrow
     prepareView();
 
     if (windowId != -1) {
-      if (webView.plugin != null && webView.plugin.inAppWebViewManager != null) {
+      if (cachedView != null) {
+        cachedView.mainLooperHandler.postDelayed(() -> {
+          if (cachedUrl != null) {
+            cachedView.loadUrl(cachedUrl);
+          }
+        }, 2000);
+      } else if (webView.plugin != null && webView.plugin.inAppWebViewManager != null) {
         Message resultMsg = webView.plugin.inAppWebViewManager.windowWebViewMessages.get(windowId);
         if (resultMsg != null) {
           ((WebView.WebViewTransport) resultMsg.obj).setWebView(webView);

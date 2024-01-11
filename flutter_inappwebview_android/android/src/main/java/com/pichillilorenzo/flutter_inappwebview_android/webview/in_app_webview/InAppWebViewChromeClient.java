@@ -14,6 +14,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.os.Parcelable;
 import android.provider.MediaStore;
@@ -677,11 +679,18 @@ public class InAppWebViewChromeClient extends WebChromeClient implements PluginR
     WebView.HitTestResult result = view.getHitTestResult();
     String url = result.getExtra();
 
-    if(result.getType() == WebView.HitTestResult.UNKNOWN_TYPE) {
-      WebView targetWebView = new WebView(getActivity());
+    if(result.getType() == WebView.HitTestResult.UNKNOWN_TYPE && url == null) {
+      InAppWebView targetWebView = new InAppWebView(getActivity());
+      if (plugin != null) {
+        plugin.cachedView = targetWebView;
+      }
+
       targetWebView.setWebViewClient(new WebViewClient() {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
+          if (plugin != null) {
+            plugin.cachedUrl = url;
+          }
           Boolean sendResult = sendCreateWindowRequest(url, isDialog, isUserGesture, resultMsg);
           return sendResult == null || sendResult;
         }

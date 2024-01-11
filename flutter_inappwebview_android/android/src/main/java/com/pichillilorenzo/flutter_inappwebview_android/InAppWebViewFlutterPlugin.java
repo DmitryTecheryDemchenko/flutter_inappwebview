@@ -19,6 +19,7 @@ import com.pichillilorenzo.flutter_inappwebview_android.service_worker.ServiceWo
 import com.pichillilorenzo.flutter_inappwebview_android.tracing.TracingControllerManager;
 import com.pichillilorenzo.flutter_inappwebview_android.webview.FlutterWebViewFactory;
 import com.pichillilorenzo.flutter_inappwebview_android.webview.InAppWebViewManager;
+import com.pichillilorenzo.flutter_inappwebview_android.webview.in_app_webview.InAppWebView;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
@@ -73,8 +74,10 @@ public class InAppWebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
   public Activity activity;
   @SuppressWarnings("deprecation")
   public FlutterView flutterView;
+  public InAppWebView cachedView;
+  public String cachedUrl;
 
-  public InAppWebViewFlutterPlugin() {}
+    public InAppWebViewFlutterPlugin() {}
 
   @SuppressWarnings("deprecation")
   public static void registerWith(PluginRegistry.Registrar registrar) {
