@@ -31,6 +31,7 @@ import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -624,16 +625,72 @@ public class InAppWebViewChromeClient extends WebChromeClient implements PluginR
     alertDialog.show();
   }
 
+  private Boolean sendCreateWindowRequest(String url, boolean isDialog, boolean isUserGesture, final Message resultMsg) {
+      int windowId = 0;
+      if (plugin != null && plugin.inAppWebViewManager != null) {
+          plugin.inAppWebViewManager.windowAutoincrementId++;
+          windowId = plugin.inAppWebViewManager.windowAutoincrementId;
+      }
+      URLRequest request = new URLRequest(url, "GET", null, null);
+      CreateWindowAction createWindowAction = new CreateWindowAction(
+              request,
+              true,
+              isUserGesture,
+              false,
+              windowId,
+              isDialog
+      );
+
+      if (plugin != null && plugin.inAppWebViewManager != null) {
+          plugin.inAppWebViewManager.windowWebViewMessages.put(windowId, resultMsg);
+      }
+
+      if (inAppWebView != null && inAppWebView.channelDelegate != null) {
+          int finalWindowId = windowId;
+          inAppWebView.channelDelegate.onCreateWindow(createWindowAction, new WebViewChannelDelegate.CreateWindowCallback() {
+              @Override
+              public boolean nonNullSuccess(@NonNull Boolean handledByClient) {
+                  return !handledByClient;
+              }
+
+              @Override
+              public void defaultBehaviour(@Nullable Boolean handledByClient) {
+                  if (plugin != null && plugin.inAppWebViewManager != null) {
+                      plugin.inAppWebViewManager.windowWebViewMessages.remove(finalWindowId);
+                  }
+              }
+
+              @Override
+              public void error(String errorCode, @Nullable String errorMessage, @Nullable Object errorDetails) {
+                  Log.e(LOG_TAG, errorCode + ", " + ((errorMessage != null) ? errorMessage : ""));
+                  defaultBehaviour(null);
+              }
+          });
+          return Boolean.TRUE;
+      }
+
+      return null;
+  }
+
   @Override
   public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, final Message resultMsg) {
-    int windowId = 0;
-    if (plugin != null && plugin.inAppWebViewManager != null) {
-      plugin.inAppWebViewManager.windowAutoincrementId++;
-      windowId = plugin.inAppWebViewManager.windowAutoincrementId;
-    }
-
     WebView.HitTestResult result = view.getHitTestResult();
     String url = result.getExtra();
+
+    if(result.getType() == WebView.HitTestResult.UNKNOWN_TYPE) {
+      WebView targetWebView = new WebView(getActivity());
+      targetWebView.setWebViewClient(new WebViewClient() {
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+          Boolean sendResult = sendCreateWindowRequest(url, isDialog, isUserGesture, resultMsg);
+          return sendResult == null || sendResult;
+        }
+      });
+      WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+      transport.setWebView(targetWebView);
+      resultMsg.sendToTarget();
+      return true;
+    }
 
     // Ensure that images with hyperlink return the correct URL, not the image source
     if(result.getType() == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
@@ -648,46 +705,8 @@ public class InAppWebViewChromeClient extends WebChromeClient implements PluginR
       }
     }
 
-    URLRequest request = new URLRequest(url, "GET", null, null);
-    CreateWindowAction createWindowAction = new CreateWindowAction(
-            request,
-            true,
-            isUserGesture,
-            false,
-            windowId,
-            isDialog
-    );
-
-    if (plugin != null && plugin.inAppWebViewManager != null) {
-      plugin.inAppWebViewManager.windowWebViewMessages.put(windowId, resultMsg);
-    }
-
-    if (inAppWebView != null && inAppWebView.channelDelegate != null) {
-      final int finalWindowId = windowId;
-      inAppWebView.channelDelegate.onCreateWindow(createWindowAction, new WebViewChannelDelegate.CreateWindowCallback() {
-        @Override
-        public boolean nonNullSuccess(@NonNull Boolean handledByClient) {
-          return !handledByClient;
-        }
-
-        @Override
-        public void defaultBehaviour(@Nullable Boolean handledByClient) {
-          if (plugin != null && plugin.inAppWebViewManager != null) {
-            plugin.inAppWebViewManager.windowWebViewMessages.remove(finalWindowId);
-          }
-        }
-
-        @Override
-        public void error(String errorCode, @Nullable String errorMessage, @Nullable Object errorDetails) {
-          Log.e(LOG_TAG, errorCode + ", " + ((errorMessage != null) ? errorMessage : ""));
-          defaultBehaviour(null);
-        }
-      });
-
-      return true;
-    }
-
-    return false;
+    Boolean sendResult = sendCreateWindowRequest(url, isDialog, isUserGesture, resultMsg);
+    return sendResult != null && sendResult;
   }
 
   @Override
@@ -1273,7 +1292,7 @@ public class InAppWebViewChromeClient extends WebChromeClient implements PluginR
           defaultBehaviour(null);
         }
       };
-      
+
       if(inAppWebView != null && inAppWebView.channelDelegate != null) {
         inAppWebView.channelDelegate.onPermissionRequest(request.getOrigin().toString(),
                 Arrays.asList(request.getResources()), null, callback);
