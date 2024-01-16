@@ -1,0 +1,4 @@
+# melos_managed_dependency_overrides: flutter_inappwebview_internal_annotations
+dependency_overrides:
+  flutter_inappwebview_internal_annotations:
+    path: ../flutter_inappwebview_internal_annotations
