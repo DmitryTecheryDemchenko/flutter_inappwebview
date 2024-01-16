@@ -162,7 +162,7 @@ public class InAppBrowserActivity extends AppCompatActivity implements InAppBrow
           if (cachedUrl != null) {
             cachedView.loadUrl(cachedUrl);
           }
-        }, 2000);
+        }, 0);
       } else if (webView.plugin != null && webView.plugin.inAppWebViewManager != null) {
         Message resultMsg = webView.plugin.inAppWebViewManager.windowWebViewMessages.get(windowId);
         if (resultMsg != null) {
