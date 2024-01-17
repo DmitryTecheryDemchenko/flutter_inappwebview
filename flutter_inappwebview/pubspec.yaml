@@ -23,22 +23,27 @@ dependencies:
     git:
       url: https://github.com/techery/flutter_inappwebview.git
       path: flutter_inappwebview_platform_interface
+      ref: e802e1c3e0ba2ef29d347d99cc9206140d493b02
   flutter_inappwebview_android:
     git:
       url: https://github.com/techery/flutter_inappwebview.git
       path: flutter_inappwebview_android
+      ref: e802e1c3e0ba2ef29d347d99cc9206140d493b02
   flutter_inappwebview_ios:
     git:
       url: https://github.com/techery/flutter_inappwebview.git
       path: flutter_inappwebview_ios
+      ref: e802e1c3e0ba2ef29d347d99cc9206140d493b02
   flutter_inappwebview_macos:
     git:
       url: https://github.com/techery/flutter_inappwebview.git
       path: flutter_inappwebview_macos
+      ref: e802e1c3e0ba2ef29d347d99cc9206140d493b02
   flutter_inappwebview_web:
     git:
       url: https://github.com/techery/flutter_inappwebview.git
       path: flutter_inappwebview_web
+      ref: e802e1c3e0ba2ef29d347d99cc9206140d493b02
 
 dev_dependencies:
   flutter_test:

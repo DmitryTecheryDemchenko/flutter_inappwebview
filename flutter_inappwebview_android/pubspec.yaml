@@ -22,6 +22,7 @@ dependencies:
     git:
       url: https://github.com/techery/flutter_inappwebview.git
       path: flutter_inappwebview_platform_interface
+      ref: e802e1c3e0ba2ef29d347d99cc9206140d493b02
 
 dev_dependencies:
   flutter_test:

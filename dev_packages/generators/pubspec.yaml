@@ -16,6 +16,7 @@ dependencies:
     git:
       url: https://github.com/techery/flutter_inappwebview.git
       path: dev_packages/flutter_inappwebview_internal_annotations
+      ref: e802e1c3e0ba2ef29d347d99cc9206140d493b02
 
 dev_dependencies:
   build_runner: 2.3.3
