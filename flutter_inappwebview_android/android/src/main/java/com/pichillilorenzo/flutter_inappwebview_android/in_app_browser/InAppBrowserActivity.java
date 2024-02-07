@@ -112,10 +112,16 @@ public class InAppBrowserActivity extends AppCompatActivity implements InAppBrow
     webView = findViewById(R.id.webView);
     InAppWebView cachedView = manager.plugin.cachedView;
     String cachedUrl = manager.plugin.cachedUrl;
-    if (cachedView!= null) {
+    if (cachedView != null) {
       pullToRefreshLayout.removeView(webView);
+      webView.destroy();
       webView = cachedView;
-      pullToRefreshLayout.addView(webView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+      ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
+              ViewGroup.LayoutParams.MATCH_PARENT,
+              ViewGroup.LayoutParams.MATCH_PARENT);
+      pullToRefreshLayout.addView(webView, 0, params);
+      manager.plugin.cachedView = null;
+      manager.plugin.cachedUrl = null;
     }
     webView.id = id;
     webView.windowId = windowId;
@@ -157,13 +163,7 @@ public class InAppBrowserActivity extends AppCompatActivity implements InAppBrow
     prepareView();
 
     if (windowId != -1) {
-      if (cachedView != null) {
-        cachedView.mainLooperHandler.postDelayed(() -> {
-          if (cachedUrl != null) {
-            cachedView.loadUrl(cachedUrl);
-          }
-        }, 0);
-      } else if (webView.plugin != null && webView.plugin.inAppWebViewManager != null) {
+      if (cachedView == null && webView.plugin != null && webView.plugin.inAppWebViewManager != null) {
         Message resultMsg = webView.plugin.inAppWebViewManager.windowWebViewMessages.get(windowId);
         if (resultMsg != null) {
           ((WebView.WebViewTransport) resultMsg.obj).setWebView(webView);

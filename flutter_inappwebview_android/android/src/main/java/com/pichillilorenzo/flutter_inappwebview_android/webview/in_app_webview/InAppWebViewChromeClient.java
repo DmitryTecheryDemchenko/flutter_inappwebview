@@ -32,6 +32,7 @@ import android.webkit.MimeTypeMap;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
@@ -627,7 +628,7 @@ public class InAppWebViewChromeClient extends WebChromeClient implements PluginR
     alertDialog.show();
   }
 
-  private Boolean sendCreateWindowRequest(String url, boolean isDialog, boolean isUserGesture, final Message resultMsg) {
+  private void sendCreateWindowRequest(String url, boolean isDialog, boolean isUserGesture, final Message resultMsg) {
       int windowId = 0;
       if (plugin != null && plugin.inAppWebViewManager != null) {
           plugin.inAppWebViewManager.windowAutoincrementId++;
@@ -659,6 +660,9 @@ public class InAppWebViewChromeClient extends WebChromeClient implements PluginR
               public void defaultBehaviour(@Nullable Boolean handledByClient) {
                   if (plugin != null && plugin.inAppWebViewManager != null) {
                       plugin.inAppWebViewManager.windowWebViewMessages.remove(finalWindowId);
+                      plugin.cachedView.destroy();
+                      plugin.cachedView = null;
+                      plugin.cachedUrl = null;
                   }
               }
 
@@ -668,18 +672,11 @@ public class InAppWebViewChromeClient extends WebChromeClient implements PluginR
                   defaultBehaviour(null);
               }
           });
-          return Boolean.TRUE;
       }
-
-      return null;
   }
 
   @Override
   public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, final Message resultMsg) {
-    WebView.HitTestResult result = view.getHitTestResult();
-    String url = result.getExtra();
-
-    if(result.getType() == WebView.HitTestResult.UNKNOWN_TYPE && url == null) {
       InAppWebView targetWebView = new InAppWebView(getActivity());
       if (plugin != null) {
         plugin.cachedView = targetWebView;
@@ -691,8 +688,8 @@ public class InAppWebViewChromeClient extends WebChromeClient implements PluginR
           if (plugin != null) {
             plugin.cachedUrl = url;
           }
-          Boolean sendResult = sendCreateWindowRequest(url, isDialog, isUserGesture, resultMsg);
-          return sendResult == null || sendResult;
+          sendCreateWindowRequest(url, isDialog, isUserGesture, resultMsg);
+          return false;
         }
       });
       WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
@@ -700,23 +697,6 @@ public class InAppWebViewChromeClient extends WebChromeClient implements PluginR
       resultMsg.sendToTarget();
       return true;
     }
-
-    // Ensure that images with hyperlink return the correct URL, not the image source
-    if(result.getType() == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
-      Message href = view.getHandler().obtainMessage();
-      view.requestFocusNodeHref(href);
-      Bundle data = href.getData();
-      if (data != null) {
-        String imageUrl = data.getString("url");
-        if(imageUrl != null && !imageUrl.isEmpty()) {
-          url = imageUrl;
-        }
-      }
-    }
-
-    Boolean sendResult = sendCreateWindowRequest(url, isDialog, isUserGesture, resultMsg);
-    return sendResult != null && sendResult;
-  }
 
   @Override
   public void onCloseWindow(WebView window) {
